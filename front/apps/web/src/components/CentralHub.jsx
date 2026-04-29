@@ -970,6 +970,47 @@ export default function CentralHub({
   onClosePanel,
   isDarkMode = false,
 }) {
+  const [viewportMode, setViewportMode] = useState("desktop");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const syncViewportMode = () => {
+      const width = window.innerWidth;
+      if (width <= 768) {
+        setViewportMode("mobile");
+      } else if (width <= 1200) {
+        setViewportMode("tablet");
+      } else {
+        setViewportMode("desktop");
+      }
+    };
+
+    syncViewportMode();
+    window.addEventListener("resize", syncViewportMode);
+    return () => window.removeEventListener("resize", syncViewportMode);
+  }, []);
+
+  const isMobileViewport = viewportMode === "mobile";
+  const isTabletViewport = viewportMode === "tablet";
+  const dashboardWidth = isMobileViewport
+    ? "96%"
+    : isTabletViewport
+      ? "92%"
+      : "88%";
+  const dividerWidth = isMobileViewport
+    ? "92%"
+    : isTabletViewport
+      ? "86%"
+      : "80%";
+  const globeSize = isMobileViewport ? 170 : isTabletViewport ? 188 : 206;
+  const infoCardMinWidth = isMobileViewport ? 104 : isTabletViewport ? 136 : 120;
+  const overviewCardMinWidth = isMobileViewport
+    ? 132
+    : isTabletViewport
+      ? 150
+      : 160;
+
   return (
     <main
       style={{
@@ -1010,7 +1051,7 @@ export default function CentralHub({
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              paddingTop: 14,
+              paddingTop: isMobileViewport ? 10 : 14,
               gap: 10,
               position: "relative",
             }}
@@ -1053,7 +1094,7 @@ export default function CentralHub({
                 transition: "transform 0.15s ease",
               }}
             >
-              <GlobeCanvas size={206} />
+              <GlobeCanvas size={globeSize} />
             </div>
 
             <div style={{ textAlign: "center", marginTop: -12 }}>
@@ -1124,7 +1165,7 @@ export default function CentralHub({
 
             <div
               style={{
-                width: "80%",
+                width: dividerWidth,
                 height: 1,
                 background: "#E5E7EB",
                 marginTop: 2,
@@ -1133,9 +1174,9 @@ export default function CentralHub({
 
             <div
               style={{
-                width: "88%",
+                width: dashboardWidth,
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+                gridTemplateColumns: `repeat(auto-fit, minmax(${infoCardMinWidth}px, 1fr))`,
                 gap: 8,
                 marginTop: 2,
               }}
@@ -1206,7 +1247,7 @@ export default function CentralHub({
 
             <div
               style={{
-                width: "88%",
+                width: dashboardWidth,
                 border: `1px solid ${isDarkMode ? "#334155" : "#E2E8F0"}`,
                 borderRadius: 12,
                 background: isDarkMode
@@ -1245,7 +1286,7 @@ export default function CentralHub({
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+                  gridTemplateColumns: `repeat(auto-fit, minmax(${overviewCardMinWidth}px, 1fr))`,
                   gap: 7,
                 }}
               >
@@ -1304,7 +1345,7 @@ export default function CentralHub({
               display: "flex",
             }}
           >
-            <WorksCarousel />
+            <WorksCarousel isDarkMode={isDarkMode} />
           </div>
         </>
       )}

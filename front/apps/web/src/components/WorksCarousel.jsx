@@ -599,7 +599,7 @@ function InsightCard({ icon: Icon, label, value, tint }) {
   );
 }
 
-function PacmanMiniGame() {
+function PacmanMiniGame({ compact = false }) {
   const [game, setGame] = useState(() => createPacmanRound());
   const [best, setBest] = useState(0);
 
@@ -905,15 +905,15 @@ function PacmanMiniGame() {
     <div
       style={{
         position: "absolute",
-        left: 20,
-        top: 10,
+        left: compact ? 10 : 20,
+        top: compact ? 8 : 10,
         zIndex: 16,
-        width: 230,
+        width: compact ? 196 : 230,
         borderRadius: 16,
         border: "1px solid #D6E7F7",
         background: "rgba(255,255,255,0.9)",
         backdropFilter: "blur(8px)",
-        padding: 12,
+        padding: compact ? 9 : 12,
         display: "grid",
         gap: 8,
       }}
@@ -946,7 +946,7 @@ function PacmanMiniGame() {
           display: "grid",
           gridTemplateColumns: `repeat(${cellsX}, 1fr)`,
           gap: 1,
-          height: 168,
+          height: compact ? 146 : 168,
           position: "relative",
         }}
       >
@@ -1200,13 +1200,14 @@ function PacmanMiniGame() {
   );
 }
 
-export default function WorksCarousel() {
+export default function WorksCarousel({ isDarkMode = false }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [viewMode, setViewMode] = useState("carousel");
   const [autoPlay, setAutoPlay] = useState(true);
   const [isInteracting, setIsInteracting] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
   const [detailWork, setDetailWork] = useState(null);
   const autoRef = useRef(null);
   const touchStartRef = useRef(null);
@@ -1252,7 +1253,26 @@ export default function WorksCarousel() {
   )
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5);
-  const desktopStageScale = 1.3;
+  const desktopStageScale = isTablet ? 1.12 : 1.3;
+  const sectionBg = isDarkMode ? "rgba(15,23,42,0.86)" : "transparent";
+  const sectionBorder = isDarkMode ? "#334155" : "#EAF0F6";
+  const stageOverlayBg = isDarkMode
+    ? "rgba(15,23,42,0.34)"
+    : "rgba(255,255,255,0.38)";
+  const chipBorder = isDarkMode ? "#334155" : "#E4ECF4";
+  const chipBg = isDarkMode ? "rgba(15,23,42,0.82)" : "#FAFCFF";
+  const chipText = isDarkMode ? "#CBD5E1" : "#5E6B7B";
+  const controlBtnBorder = isDarkMode ? "#334155" : "#E2EAF2";
+  const controlBtnBg = isDarkMode
+    ? "rgba(15,23,42,0.82)"
+    : "rgba(255,255,255,0.82)";
+  const controlBtnActiveBg = isDarkMode
+    ? "rgba(59,130,246,0.22)"
+    : "#F2FAFF";
+  const controlBtnIconColor = isDarkMode ? "#CBD5E1" : "#7A8EA5";
+  const controlBtnActiveIconColor = isDarkMode ? "#93C5FD" : "#3B9CD7";
+  const controlDividerColor = isDarkMode ? "#334155" : "#E2EAF2";
+  const stageMinHeight = isTablet ? 272 : 304;
 
   const go = (dir) => {
     setCurrentIndex((i) => (i + dir + total) % total);
@@ -1270,7 +1290,9 @@ export default function WorksCarousel() {
     if (typeof window === "undefined") return;
 
     const update = () => {
-      setIsMobile(window.innerWidth <= 768);
+      const width = window.innerWidth;
+      setIsMobile(width <= 768);
+      setIsTablet(width > 768 && width <= 1200);
     };
 
     update();
@@ -1319,10 +1341,16 @@ export default function WorksCarousel() {
 
     if (absD > 2) return null;
 
-    const rotY = normalized * 18;
-    const z = absD === 0 ? 12 : -112 * absD;
-    const tx = normalized * 106;
-    const scale = absD === 0 ? 1.1 : 0.93 - absD * 0.07;
+    const rotateStep = isTablet ? 14 : 18;
+    const depthStep = isTablet ? 94 : 112;
+    const spreadStep = isTablet ? 90 : 106;
+    const centerScale = isTablet ? 1.04 : 1.1;
+    const sideBaseScale = isTablet ? 0.95 : 0.93;
+    const sideScaleLoss = isTablet ? 0.05 : 0.07;
+    const rotY = normalized * rotateStep;
+    const z = absD === 0 ? 12 : -depthStep * absD;
+    const tx = normalized * spreadStep;
+    const scale = absD === 0 ? centerScale : sideBaseScale - absD * sideScaleLoss;
     const opacity = absD === 0 ? 1 : 0.74 - absD * 0.1;
 
     return {
@@ -1359,6 +1387,7 @@ export default function WorksCarousel() {
         gap: 0,
         flex: 1,
         minHeight: 0,
+        background: sectionBg,
       }}
     >
       <div
@@ -1367,19 +1396,27 @@ export default function WorksCarousel() {
           justifyContent: "space-between",
           alignItems: "center",
           padding: "8px 16px 6px",
-          borderTop: "1px solid #EAF0F6",
+          borderTop: `1px solid ${sectionBorder}`,
           gap: 10,
-          flexWrap: isMobile ? "wrap" : "nowrap",
+          flexWrap: isMobile || isTablet ? "wrap" : "nowrap",
           flexShrink: 0,
         }}
       >
         <div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: "#0F172A" }}>
+          <div
+            style={{
+              fontSize: 12,
+              fontWeight: 600,
+              color: isDarkMode ? "#E2E8F0" : "#0F172A",
+            }}
+          >
             Member Works
           </div>
           <div style={{ fontSize: 10, color: "#94A3B8", marginTop: 1 }}>
             {isMobile
               ? `${total} items · mobile swipe mode`
+              : isTablet
+                ? `${total} items · tablet adaptive mode`
               : `${total} items · Arrow keys / swipe supported`}
           </div>
         </div>
@@ -1396,8 +1433,8 @@ export default function WorksCarousel() {
                   width: 28,
                   height: 28,
                   borderRadius: 8,
-                  border: "1px solid #E2EAF2",
-                  background: "rgba(255,255,255,0.82)",
+                  border: `1px solid ${controlBtnBorder}`,
+                  background: controlBtnBg,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -1419,7 +1456,7 @@ export default function WorksCarousel() {
                   e.currentTarget.style.boxShadow = "none";
                 }}
               >
-                <ChevronLeft size={13} color="#7A8EA5" />
+                <ChevronLeft size={13} color={controlBtnIconColor} />
               </button>
 
               <button
@@ -1431,11 +1468,11 @@ export default function WorksCarousel() {
                   width: 28,
                   height: 28,
                   borderRadius: 8,
-                  border: "1px solid #E2EAF2",
+                  border: `1px solid ${controlBtnBorder}`,
                   background:
                     autoPlay && viewMode === "carousel"
-                      ? "#F2FAFF"
-                      : "rgba(255,255,255,0.82)",
+                      ? controlBtnActiveBg
+                      : controlBtnBg,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -1458,9 +1495,9 @@ export default function WorksCarousel() {
                 }}
               >
                 {autoPlay ? (
-                  <Pause size={12} color="#3B9CD7" />
+                  <Pause size={12} color={controlBtnActiveIconColor} />
                 ) : (
-                  <Play size={12} color="#7A8EA5" />
+                  <Play size={12} color={controlBtnIconColor} />
                 )}
               </button>
 
@@ -1473,8 +1510,8 @@ export default function WorksCarousel() {
                   width: 28,
                   height: 28,
                   borderRadius: 8,
-                  border: "1px solid #E2EAF2",
-                  background: "rgba(255,255,255,0.82)",
+                  border: `1px solid ${controlBtnBorder}`,
+                  background: controlBtnBg,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -1496,14 +1533,14 @@ export default function WorksCarousel() {
                   e.currentTarget.style.boxShadow = "none";
                 }}
               >
-                <ChevronRight size={13} color="#7A8EA5" />
+                <ChevronRight size={13} color={controlBtnIconColor} />
               </button>
 
               <div
                 style={{
                   width: 1,
                   height: 18,
-                  background: "#E2EAF2",
+                  background: controlDividerColor,
                   margin: "0 2px",
                 }}
               />
@@ -1523,9 +1560,11 @@ export default function WorksCarousel() {
                 width: 28,
                 height: 28,
                 borderRadius: 8,
-                border: `1px solid ${viewMode === mode ? "#3B9CD744" : "#E2EAF2"}`,
+                border: `1px solid ${
+                  viewMode === mode ? "#3B9CD744" : controlBtnBorder
+                }`,
                 background:
-                  viewMode === mode ? "#F2FAFF" : "rgba(255,255,255,0.82)",
+                  viewMode === mode ? controlBtnActiveBg : controlBtnBg,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -1546,7 +1585,7 @@ export default function WorksCarousel() {
             >
               <Icon
                 size={13}
-                color={viewMode === mode ? "#3B9CD7" : "#9AA8B5"}
+                color={viewMode === mode ? controlBtnActiveIconColor : "#9AA8B5"}
               />
             </button>
           ))}
@@ -1557,7 +1596,7 @@ export default function WorksCarousel() {
         style={{
           padding: "0 16px 8px",
           display: "grid",
-          gridTemplateColumns: isMobile
+          gridTemplateColumns: isMobile || isTablet
             ? "repeat(2, minmax(0, 1fr))"
             : "repeat(4, minmax(0, 1fr))",
           gap: 7,
@@ -1615,12 +1654,12 @@ export default function WorksCarousel() {
             key={tag}
             style={{
               whiteSpace: "nowrap",
-              border: "1px solid #E4ECF4",
+              border: `1px solid ${chipBorder}`,
               borderRadius: 999,
-              background: "#FAFCFF",
+              background: chipBg,
               padding: "3px 8px",
               fontSize: 9,
-              color: "#5E6B7B",
+              color: chipText,
               display: "inline-flex",
               alignItems: "center",
               gap: 5,
@@ -1667,7 +1706,7 @@ export default function WorksCarousel() {
           style={{
             position: "relative",
             flex: 1,
-            minHeight: 304,
+            minHeight: stageMinHeight,
             overflow: "hidden",
             outline: "none",
             borderTop: "1px solid transparent",
@@ -1679,12 +1718,12 @@ export default function WorksCarousel() {
             style={{
               position: "absolute",
               inset: 0,
-              background: "rgba(255,255,255,0.38)",
+              background: stageOverlayBg,
               pointerEvents: "none",
             }}
           />
 
-          <PacmanMiniGame />
+          <PacmanMiniGame compact={isTablet} />
 
           <div
             style={{

@@ -154,9 +154,10 @@ const CLUB_POINTS_REWARD_NOTE =
   "积分可用于兑换奖品与优先权（企业实习内推、夏令营/冬令营、跨省校外讲座交流参与优先）。";
 const DEV_TEAM_MEMBERS = [
   {
-    name: "张薇薇",
+    name: "V09201030",
     role: "项目经理",
     simpleIntro: "发起与统筹，负责项目推进和团队协同",
+    avatar: "/avatars/v09201030.svg",
     responsibilities: [
       "整体项目进度管理与风险把控",
       "跨角色沟通协调（前后端/设计）",
@@ -185,9 +186,10 @@ const DEV_TEAM_MEMBERS = [
     blog: "https://opensouce-club.top/",
   },
   {
-    name: "林业殷",
+    name: "Tippydes",
     role: "前端开发",
     simpleIntro: "实现页面与交互，完成双端适配与联调",
+    avatar: "/avatars/tippydes.png",
     responsibilities: [
       "页面实现（HTML/CSS/JS）",
       "交互效果与响应式适配",
@@ -200,9 +202,10 @@ const DEV_TEAM_MEMBERS = [
     blog: "https://opensouce-club.top/",
   },
   {
-    name: "陈倡名",
+    name: "Nerdlet369",
     role: "后端开发",
     simpleIntro: "负责 API、服务逻辑与数据库设计维护",
+    avatar: "/avatars/nerdlet369.jpg",
     responsibilities: [
       "API 接口设计与开发",
       "后台服务与业务逻辑实现",
@@ -215,9 +218,10 @@ const DEV_TEAM_MEMBERS = [
     blog: "https://opensouce-club.top/",
   },
   {
-    name: "周雨",
+    name: "Dirinkbottle",
     role: "后端开发",
     simpleIntro: "负责 API、服务逻辑与数据库设计维护",
+    avatar: "/avatars/dirinkbottle.jpg",
     responsibilities: [
       "API 接口设计与开发",
       "后台服务与业务逻辑实现",
@@ -233,6 +237,7 @@ const DEV_TEAM_MEMBERS = [
     name: "李枨",
     role: "团队管理员",
     simpleIntro: "负责仓库权限、协作规范与流程治理",
+    avatar: "/avatars/lichang.jpg",
     responsibilities: [
       "GitHub 仓库权限管理",
       "项目组织成员权限配置",
@@ -277,8 +282,11 @@ export default function HomePage() {
   const [themeMode, setThemeMode] = useState("auto");
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const [isTabletViewport, setIsTabletViewport] = useState(false);
+  const [isPhoneViewport, setIsPhoneViewport] = useState(false);
   const aboutScrollRef = useRef(null);
   const aboutSectionRefs = useRef({});
+  const mobileTapGuardRef = useRef({ element: null, ts: 0, timer: null });
 
   useEffect(() => {
     const hasBooted =
@@ -356,7 +364,12 @@ export default function HomePage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
-    const syncViewport = () => setIsMobileViewport(window.innerWidth <= 1024);
+    const syncViewport = () => {
+      const width = window.innerWidth;
+      setIsPhoneViewport(width <= 768);
+      setIsTabletViewport(width > 768 && width <= 1200);
+      setIsMobileViewport(width <= 1200);
+    };
     syncViewport();
 
     window.addEventListener("resize", syncViewport);
@@ -364,6 +377,66 @@ export default function HomePage() {
       window.removeEventListener("resize", syncViewport);
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !isMobileViewport) return undefined;
+
+    const resetArmedState = () => {
+      const current = mobileTapGuardRef.current;
+      if (current.element instanceof HTMLElement) {
+        delete current.element.dataset.doubletapArmed;
+      }
+      if (current.timer) {
+        window.clearTimeout(current.timer);
+      }
+      mobileTapGuardRef.current = { element: null, ts: 0, timer: null };
+    };
+
+    const onClickCapture = (event) => {
+      if (!(event.target instanceof Element)) return;
+
+      const clickable = event.target.closest(
+        '[data-ui-touch="true"], button, a[href], [role="button"]',
+      );
+      if (!clickable) return;
+
+      if (
+        clickable.matches("button:disabled, [aria-disabled='true']") ||
+        clickable.getAttribute("disabled") !== null
+      ) {
+        return;
+      }
+
+      const now = Date.now();
+      const { element, ts } = mobileTapGuardRef.current;
+      const isSameElement = element === clickable;
+      const withinConfirmWindow = now - ts <= 520;
+
+      if (isSameElement && withinConfirmWindow) {
+        resetArmedState();
+        return;
+      }
+
+      resetArmedState();
+      mobileTapGuardRef.current.element = clickable;
+      mobileTapGuardRef.current.ts = now;
+      if (clickable instanceof HTMLElement) {
+        clickable.dataset.doubletapArmed = "true";
+      }
+      mobileTapGuardRef.current.timer = window.setTimeout(() => {
+        resetArmedState();
+      }, 520);
+
+      event.preventDefault();
+      event.stopPropagation();
+    };
+
+    window.addEventListener("click", onClickCapture, true);
+    return () => {
+      window.removeEventListener("click", onClickCapture, true);
+      resetArmedState();
+    };
+  }, [isMobileViewport]);
 
   useEffect(() => {
     if (!aboutOpen || typeof window === "undefined") return undefined;
@@ -413,9 +486,9 @@ export default function HomePage() {
   return (
     <div
       className={isDarkMode ? "home-theme-dark" : "home-theme-light"}
-      onMouseMove={handleMouseMove}
+      onMouseMove={isPhoneViewport ? undefined : handleMouseMove}
       style={{
-        height: "100vh",
+        height: "100dvh",
         background: isDarkMode ? "#0B1220" : "#F3F6FA",
         display: "flex",
         flexDirection: "column",
@@ -460,12 +533,29 @@ export default function HomePage() {
               flexShrink: 0,
               padding: "5px 12px",
               borderRadius: 999,
-              border: `1px solid ${activeCategory === item.id ? "#0A84FF40" : "#E5E7EB"}`,
+              border: `1px solid ${
+                activeCategory === item.id
+                  ? isDarkMode
+                    ? "#38BDF840"
+                    : "#0A84FF40"
+                  : isDarkMode
+                    ? "#334155"
+                    : "#E5E7EB"
+              }`,
               background:
-                activeCategory === item.id ? "#EFF6FF" : "transparent",
+                activeCategory === item.id
+                  ? isDarkMode
+                    ? "rgba(10,132,255,0.18)"
+                    : "#EFF6FF"
+                  : "transparent",
               fontSize: 12,
               fontWeight: activeCategory === item.id ? 600 : 400,
-              color: activeCategory === item.id ? "#0A84FF" : "#64748B",
+              color:
+                activeCategory === item.id
+                  ? "#0A84FF"
+                  : isDarkMode
+                    ? "#94A3B8"
+                    : "#64748B",
               cursor: "pointer",
               whiteSpace: "nowrap",
               transition: "all 0.15s",
@@ -566,7 +656,9 @@ export default function HomePage() {
               transition: "color 0.15s",
             }}
             onMouseEnter={(e) => (e.currentTarget.style.color = "#0A84FF")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "#94A3B8")}
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.color = isDarkMode ? "#CBD5E1" : "#94A3B8")
+            }
           >
             关于我们
           </button>
@@ -585,9 +677,11 @@ export default function HomePage() {
                 textDecoration: "none",
                 transition: "color 0.15s",
               }}
-              onMouseEnter={(e) => (e.target.style.color = "#0A84FF")}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "#0A84FF")}
               onMouseLeave={(e) =>
-                (e.target.style.color = isDarkMode ? "#CBD5E1" : "#94A3B8")
+                (e.currentTarget.style.color = isDarkMode
+                  ? "#CBD5E1"
+                  : "#94A3B8")
               }
             >
               {item.label}
@@ -609,15 +703,19 @@ export default function HomePage() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            padding: "22px 14px",
+            padding: isPhoneViewport
+              ? "10px 8px"
+              : isTabletViewport
+                ? "16px 12px"
+                : "22px 14px",
           }}
         >
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
-              width: "min(1180px, 100%)",
-              height: "min(88vh, 860px)",
-              borderRadius: 20,
+              width: isPhoneViewport ? "100%" : "min(1180px, 100%)",
+              height: isPhoneViewport ? "min(94dvh, 860px)" : "min(88dvh, 860px)",
+              borderRadius: isPhoneViewport ? 14 : 20,
               border: "1px solid rgba(191,219,254,0.65)",
               background: "rgba(248,251,255,0.98)",
               boxShadow: "0 26px 64px rgba(15,23,42,0.28)",
@@ -630,8 +728,8 @@ export default function HomePage() {
             <div
               style={{
                 position: "absolute",
-                width: 360,
-                height: 360,
+                width: isPhoneViewport ? 200 : 360,
+                height: isPhoneViewport ? 200 : 360,
                 borderRadius: "50%",
                 right: -120,
                 top: -170,
@@ -642,8 +740,8 @@ export default function HomePage() {
             <div
               style={{
                 position: "absolute",
-                width: 260,
-                height: 260,
+                width: isPhoneViewport ? 170 : 260,
+                height: isPhoneViewport ? 170 : 260,
                 borderRadius: "50%",
                 left: -90,
                 bottom: -130,
@@ -658,7 +756,7 @@ export default function HomePage() {
                 justifyContent: "space-between",
                 alignItems: "center",
                 gap: 20,
-                padding: "18px 20px",
+                padding: isPhoneViewport ? "12px 14px" : "18px 20px",
                 borderBottom: "1px solid #E5E7EB",
                 background: "rgba(255,255,255,0.92)",
                 position: "relative",
@@ -678,7 +776,7 @@ export default function HomePage() {
                 </div>
                 <div
                   style={{
-                    fontSize: 24,
+                    fontSize: isPhoneViewport ? 20 : 24,
                     fontWeight: 700,
                     color: "#0F172A",
                     lineHeight: 1.15,
@@ -1380,7 +1478,12 @@ export default function HomePage() {
           background: #0F172A !important;
           border-color: #334155 !important;
         }
-        @media (max-width: 1024px) {
+        [data-doubletap-armed="true"] {
+          outline: 2px solid #38BDF8 !important;
+          outline-offset: 2px !important;
+          filter: brightness(1.03);
+        }
+        @media (max-width: 1200px) {
           .hidden.lg\\:flex { display: none !important; }
         }
         @media (max-width: 980px) {
@@ -1402,7 +1505,7 @@ export default function HomePage() {
             min-width: 160px;
           }
         }
-        @media (min-width: 1024px) {
+        @media (min-width: 1201px) {
           .lg\\:hidden { display: none !important; }
         }
       `}</style>
