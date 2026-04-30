@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 
 export default function GlobeCanvas({ pulse = false, size = 260 }) {
-  const mountRef = useRef(null);
+  const canvasRef = useRef(null);
   const frameRef = useRef(null);
   const sceneRef = useRef({});
 
@@ -13,20 +13,20 @@ export default function GlobeCanvas({ pulse = false, size = 260 }) {
       if (cleanup) return;
       THREE = mod;
 
-      const el = mountRef.current;
-      if (!el) return;
+      const canvas = canvasRef.current;
+      if (!canvas) return;
 
       const w = size;
       const h = size;
 
       const renderer = new THREE.WebGLRenderer({
+        canvas,
         antialias: true,
         alpha: true,
       });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      renderer.setSize(w, h);
+      renderer.setSize(w, h, false);
       renderer.setClearColor(0x000000, 0);
-      el.appendChild(renderer.domElement);
 
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(55, w / h, 0.1, 100);
@@ -140,13 +140,9 @@ export default function GlobeCanvas({ pulse = false, size = 260 }) {
       cancelAnimationFrame(frameRef.current);
       if (sceneRef.current.renderer) {
         const { renderer } = sceneRef.current;
-        if (mountRef.current && renderer.domElement) {
-          try {
-            mountRef.current.removeChild(renderer.domElement);
-          } catch (_) {}
-        }
         renderer.dispose();
       }
+      sceneRef.current = {};
     };
   }, [size]);
 
@@ -157,14 +153,14 @@ export default function GlobeCanvas({ pulse = false, size = 260 }) {
   }, [pulse]);
 
   return (
-    <div
-      ref={mountRef}
+    <canvas
+      ref={canvasRef}
+      width={size}
+      height={size}
       style={{
         width: size,
         height: size,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
+        display: "block",
         filter: "drop-shadow(0 0 24px rgba(10,132,255,0.2))",
         flexShrink: 0,
       }}
